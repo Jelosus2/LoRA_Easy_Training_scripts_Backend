@@ -33,7 +33,7 @@ class Tunnel:
         process = subprocess.Popen(
             f"{'./' if platform == 'linux' else ''}{self.executable} tunnel --url http://127.0.0.1:8000",
             shell=platform == "linux",
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            preexec_fn=os.setsid
             stdout=subprocess.PIPE
         )
 
