@@ -96,6 +96,7 @@ def train() -> None:
     app.state.TRAINING = True
     app.state.ERROR = False
     try:
+        app.state.TUNNEL.kill_tunnel()
         subprocess.check_call(
             f"{python} {Path(f'sd_scripts/{app.state.SD_TYPE}').resolve()} --config_file={Path('runtime_store/config.toml').resolve()} --dataset_config={Path('runtime_store/dataset.toml').resolve()}",
             shell=sys.platform == "linux",
@@ -110,7 +111,7 @@ def train() -> None:
 
 def startup():
     with contextlib.suppress(AttributeError):
-        app.state.TUNNEL.process.start()
+        app.state.TUNNEL.run_tunnel()
 
 
 routes = [
