@@ -33,12 +33,9 @@ class Tunnel:
         process = subprocess.Popen(
             f"{'./' if platform == 'linux' else ''}{self.executable} tunnel --url http://127.0.0.1:8000",
             shell=platform == "linux",
-            preexec_fn=os.setsid
-            stdout=subprocess.PIPE
+            preexec_fn=os.setsid,
+            stdout=subprocess.PIPE,
         )
 
     def kill_tunnel(self):
-        if platform == "linux":
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        else:
-            os.kill(process.pid, signal.SIGTERM)
+        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
