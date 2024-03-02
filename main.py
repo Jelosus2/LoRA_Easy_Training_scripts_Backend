@@ -92,6 +92,7 @@ async def check_path(request: Request) -> Response:
 
 
 def train() -> None:
+    global server
     python = sys.executable
     app.state.TRAINING = True
     app.state.ERROR = False
@@ -107,6 +108,12 @@ def train() -> None:
         return
     app.state.TRAINING = False
     app.state.ERROR = False
+    server.should_exit = True
+    server.force_exit = True
+    try:
+        raise Exception("Stop training, now!")
+    except:
+        print("Training finished, stopping thread")
 
 
 def startup():
