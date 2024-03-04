@@ -6,3 +6,5 @@ lion-pytorch
 prodigyopt
 came-pytorch
 wandb
+pyngrok
+pycloudflared

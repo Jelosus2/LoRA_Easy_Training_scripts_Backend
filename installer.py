@@ -45,10 +45,7 @@ def check_git_install() -> None:
 # windows only
 def set_execution_policy() -> None:
     try:
-        subprocess.check_call(
-            str(Path("installables/change_execution_policy.bat")),
-            shell=PLATFORM == "linux",
-        )
+        subprocess.check_call(str(Path("installables/change_execution_policy.bat")))
     except subprocess.SubprocessError:
         try:
             subprocess.check_call(
@@ -143,7 +140,9 @@ def ask_10_series(venv_pip):
     if reply == "n":
         return False
 
-    subprocess.check_call(f"{venv_pip} install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116")
+    subprocess.check_call(
+        f"{venv_pip} install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116"
+    )
     subprocess.check_call(f"{venv_pip} install -r requirements.txt")
     subprocess.check_call(
         f"{venv_pip} install -U -I --no-deps https://github.com/C43H66N12O12S2/stable-diffusion-webui/releases/download/f/xformers-0.0.14.dev0-cp310-cp310-win_amd64.whl"
@@ -167,7 +166,9 @@ def ask_10_series(venv_pip):
 
 # windows only
 def setup_windows(venv_pip):
-    subprocess.check_call(f"{venv_pip} install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118")
+    subprocess.check_call(
+        f"{venv_pip} install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118"
+    )
     subprocess.check_call(f"{venv_pip} install -r requirements.txt")
     subprocess.check_call(
         f"{venv_pip} install xformers --index-url https://download.pytorch.org/whl/cu118"
@@ -197,12 +198,53 @@ def setup_linux(venv_pip):
     subprocess.check_call(f"{venv_pip} install -r ../requirements.txt", shell=True)
 
 
-def setup_config():
+# colab only
+def setup_colab(venv_pip):
+    setup_linux(venv_pip)
+    setup_accelerate("linux")
+
+
+def ask_yes_no(question: str) -> bool:
     reply = None
     while reply not in ("y", "n"):
-        reply = input("Are you using this remotely? (y/n): ")
+        reply = input(f"{question} (y/n): ")
+    return reply == "y"
+
+
+def setup_config(colab: bool = False) -> None:
+    if colab:
+        config = {
+            "remote": True,
+            "remote_mode": "cloudflared",
+            "kill_tunnel_on_train_start": True,
+            "kill_server_on_train_end": True,
+        }
+        with open("config.json", "w") as f:
+            f.write(json.dumps(config, indent=2))
+        return
+    is_remote = ask_yes_no("are you using this remotely?")
+    remote_mode = "none"
+    if is_remote:
+        remote_mode = (
+            "ngrok" if ask_yes_no("do you want to use ngrok?") else "cloudflared"
+        )
+    ngrok_token = ""
+    if remote_mode == "ngrok":
+        ngrok_token = input(
+            "copy paste your token from your ngrok dashboard (https://dashboard.ngrok.com/get-started/your-authtoken) (requires account): "
+        )
+
     with open("config.json", "w") as f:
-        f.write(json.dumps({"remote": reply == "y"}, indent=2))
+        f.write(
+            json.dumps(
+                {
+                    "remote": is_remote,
+                    "remote_mode": remote_mode,
+                    "ngrok_token": ngrok_token,
+                },
+                indent=2,
+            )
+        )
 
 
 def main():
@@ -217,7 +259,7 @@ def main():
         if not set_execution_policy():
             quit()
 
-    setup_config()
+    setup_config(len(sys.argv) > 1 and sys.argv[1] == "colab")
 
     os.chdir("sd_scripts")
     if PLATFORM == "windows":
@@ -227,6 +269,11 @@ def main():
 
     print("creating venv and installing requirements")
     subprocess.check_call(f"{sys.executable} -m venv venv", shell=PLATFORM == "linux")
+
+    if len(sys.argv) > 1 and sys.argv[1] == "colab":
+        setup_colab(pip)
+        print("completed installing")
+        quit()
 
     if PLATFORM == "windows":
         if not ask_10_series(pip):
