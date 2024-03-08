@@ -8,3 +8,4 @@ came-pytorch
 wandb
 pyngrok
 pycloudflared
+pytorch-optimizer
