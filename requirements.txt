@@ -4,7 +4,6 @@ requests
 dadaptation
 lion-pytorch
 prodigyopt
-came-pytorch
 wandb
 pyngrok
 pycloudflared
