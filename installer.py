@@ -4,19 +4,7 @@ import sys
 import subprocess
 import os
 import shutil
-from zipfile import ZipFile
 
-if sys.platform == "win32":
-    try:
-        import requests
-    except Exception:
-        print("installing requests...")
-        python = sys.executable
-        subprocess.check_call(
-            f"{python} -m pip install requests",
-            stdout=subprocess.DEVNULL,
-        )
-        import requests
 
 PLATFORM = (
     "windows" if sys.platform == "win32" else "linux" if sys.platform == "linux" else ""
@@ -95,112 +83,32 @@ def setup_accelerate(platform: str) -> None:
     shutil.move("default_config.yaml", str(path.resolve()))
 
 
-# windows only
-def setup_cudnn():
-    reply = None
-    while reply not in ("y", "n"):
-        reply = input(
-            "Do you want to install the optional cudnn patch for faster "
-            "training on high end 30X0 and 40X0 cards? (y/n): "
-        ).casefold()
-    if reply == "n":
-        return
-
-    r = requests.get(
-        "https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/cudnn-windows-x86_64-8.6.0.163_cuda11-archive.zip"
-    )
-    with open("cudnn.zip", "wb") as f:
-        f.write(r.content)
-    with ZipFile("cudnn.zip", "r") as f:
-        f.extractall(path="cudnn_patch")
-    shutil.move(
-        str(Path("cudnn_patch/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin")),
-        "cudnn_windows",
-    )
-    os.mkdir("temp")
-    r = requests.get(
-        "https://raw.githubusercontent.com/bmaltais/kohya_ss/9c5bdd17499e3f677a5d7fa081ee0b4fccf5fd4a/tools/cudann_1.8_install.py"
-    )
-    with Path("temp/cudnn.py").open("wb") as f:
-        f.write(r.content)
+def setup_venv(venv_pip):
     subprocess.check_call(
-        f"{Path('venv/Scripts/python.exe')} {Path('temp/cudnn.py')}".split(" ")
-    )
-    shutil.rmtree("temp")
-    shutil.rmtree("cudnn_windows")
-    shutil.rmtree("cudnn_patch")
-    os.remove("cudnn.zip")
-
-
-# windows only
-def ask_10_series(venv_pip):
-    reply = None
-    while reply not in ("y", "n"):
-        reply = input("Are you using a 10X0 series card? (y/n): ")
-    if reply == "n":
-        return False
-
-    subprocess.check_call(
-        f"{venv_pip} install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116"
-    )
-    subprocess.check_call(f"{venv_pip} install -r requirements.txt")
-    subprocess.check_call(
-        f"{venv_pip} install -U -I --no-deps https://github.com/C43H66N12O12S2/stable-diffusion-webui/releases/download/f/xformers-0.0.14.dev0-cp310-cp310-win_amd64.whl"
-    )
-    subprocess.check_call(f"{venv_pip} install ../LyCORIS/.")
-    subprocess.check_call(f"{venv_pip} install ../custom_scheduler/.")
-    subprocess.check_call(f"{venv_pip} install bitsandbytes==0.35.0")
-    subprocess.check_call(f"{venv_pip} install -r ../requirements.txt")
-
-    shutil.copy(
-        Path("../installables/libbitsandbytes_cudaall.dll"),
-        Path("venv/Lib/site-packages/bitsandbytes"),
-    )
-    os.remove(Path("venv/Lib/site-packages/bitsandbytes/cuda_setup/main.py"))
-    shutil.copy(
-        Path("../installables/main.py"),
-        Path("venv/Lib/site-packages/bitsandbytes/cuda_setup"),
-    )
-    return True
-
-
-# windows only
-def setup_windows(venv_pip):
-    subprocess.check_call(
-        f"{venv_pip} install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118"
-    )
-    subprocess.check_call(f"{venv_pip} install -r requirements.txt")
-    subprocess.check_call(
-        f"{venv_pip} install xformers --index-url https://download.pytorch.org/whl/cu118"
-    )
-    subprocess.check_call(f"{venv_pip} install ../LyCORIS/.")
-    subprocess.check_call(f"{venv_pip} install ../custom_scheduler/.")
-    subprocess.check_call(
-        f"{venv_pip} install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.1-py3-none-win_amd64.whl"
-    )
-    subprocess.check_call(f"{venv_pip} install -r ../requirements.txt")
-
-
-# linux only
-def setup_linux(venv_pip):
-    subprocess.check_call(
-        f"{venv_pip} install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118",
-        shell=True,
+        f"{venv_pip} install -U torch==2.2.1 torchvision==0.17.1 --index-url https://download.pytorch.org/whl/cu121",
+        shell=PLATFORM == "linux",
     )
     subprocess.check_call(
-        f"{venv_pip} install xformers --index-url https://download.pytorch.org/whl/cu118",
-        shell=True,
+        f"{venv_pip} install -U xformers --index-url https://download.pytorch.org/whl/cu121",
+        shell=PLATFORM == "linux",
     )
-    subprocess.check_call(f"{venv_pip} install -r requirements.txt", shell=True)
-    subprocess.check_call(f"{venv_pip} install ../LyCORIS/.", shell=True)
-    subprocess.check_call(f"{venv_pip} install ../custom_scheduler/.", shell=True)
-    subprocess.check_call(f"{venv_pip} install bitsandbytes scipy", shell=True)
-    subprocess.check_call(f"{venv_pip} install -r ../requirements.txt", shell=True)
+    subprocess.check_call(
+        f"{venv_pip} install -U -r requirements.txt", shell=PLATFORM == "linux"
+    )
+    subprocess.check_call(
+        f"{venv_pip} install -U ../LyCORIS/.", shell=PLATFORM == "linux"
+    )
+    subprocess.check_call(
+        f"{venv_pip} install -U ../custom_scheduler/.", shell=PLATFORM == "linux"
+    )
+    subprocess.check_call(
+        f"{venv_pip} install -U -r ../requirements.txt", shell=PLATFORM == "linux"
+    )
 
 
 # colab only
 def setup_colab(venv_pip):
-    setup_linux(venv_pip)
+    setup_venv(venv_pip)
     setup_accelerate("linux")
 
 
@@ -211,7 +119,7 @@ def ask_yes_no(question: str) -> bool:
     return reply == "y"
 
 
-def setup_config(colab: bool = False) -> None:
+def setup_config(colab: bool = False, local: bool = False) -> None:
     if colab:
         config = {
             "remote": True,
@@ -222,7 +130,7 @@ def setup_config(colab: bool = False) -> None:
         with open("config.json", "w") as f:
             f.write(json.dumps(config, indent=2))
         return
-    is_remote = ask_yes_no("are you using this remotely?")
+    is_remote = False if local else ask_yes_no("are you using this remotely?")
     remote_mode = "none"
     if is_remote:
         remote_mode = (
@@ -259,7 +167,10 @@ def main():
         if not set_execution_policy():
             quit()
 
-    setup_config(len(sys.argv) > 1 and sys.argv[1] == "colab")
+    setup_config(
+        len(sys.argv) > 1 and sys.argv[1] == "colab",
+        len(sys.argv) > 1 and sys.argv[1] == "local",
+    )
 
     os.chdir("sd_scripts")
     if PLATFORM == "windows":
@@ -275,12 +186,7 @@ def main():
         print("completed installing")
         quit()
 
-    if PLATFORM == "windows":
-        if not ask_10_series(pip):
-            setup_windows(pip)
-            setup_cudnn()
-    else:
-        setup_linux(pip)
+    setup_venv(pip)
     setup_accelerate(PLATFORM)
 
     print(
