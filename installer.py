@@ -95,9 +95,9 @@ def setup_venv(venv_pip):
     subprocess.check_call(
         f"{venv_pip} install -U -r requirements.txt", shell=PLATFORM == "linux"
     )
-    subprocess.check_call(
-        f"{venv_pip} install -U ../LyCORIS/.", shell=PLATFORM == "linux"
-    )
+    # subprocess.check_call(
+    #     f"{venv_pip} install -U ../LyCORIS/.", shell=PLATFORM == "linux"
+    # )
     subprocess.check_call(
         f"{venv_pip} install -U ../custom_scheduler/.", shell=PLATFORM == "linux"
     )
@@ -126,6 +126,7 @@ def setup_config(colab: bool = False, local: bool = False) -> None:
             "remote_mode": "cloudflared",
             "kill_tunnel_on_train_start": True,
             "kill_server_on_train_end": True,
+            "colab": True,
         }
         with open("config.json", "w") as f:
             f.write(json.dumps(config, indent=2))

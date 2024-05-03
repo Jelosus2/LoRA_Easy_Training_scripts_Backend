@@ -2,12 +2,10 @@ starlette
 uvicorn[standard]
 requests
 dadaptation
-lion-pytorch
-prodigyopt
 wandb
 pyngrok
 pycloudflared
-pytorch-optimizer
-bitsandbytes
 scipy
 came-pytorch
+pytorch_optimizer
+lycoris-lora==2.3.0.dev6
