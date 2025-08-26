@@ -101,6 +101,9 @@ def setup_venv(venv_pip):
     subprocess.check_call(
         f"{venv_pip} install -U -r ../requirements.txt", shell=PLATFORM == "linux"
     )
+    subprocess.check_call(
+        f"{venv_pip} install -U numpy==1.26.4", shell=PLATFORM == "linux"
+    )
 
 
 # colab only
