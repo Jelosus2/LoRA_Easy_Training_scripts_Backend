@@ -1,3 +1,6 @@
 [submodule "LyCORIS"]
 	path = LyCORIS
 	url = https://github.com/KohakuBlueleaf/LyCORIS
+[submodule "sd_scripts"]
+	path = sd_scripts
+	url = https://github.com/Jelosus2/sd-scripts
